@@ -5,21 +5,29 @@ const multer = require('multer');
 const path = require('path');
 const pool = require('../config/db');
 const { requireLogin } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, './public/images/uploads'),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary storage for listing images
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'unimarket/listings',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto' }]
   }
 });
+
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ok = /jpeg|jpg|png|webp/.test(path.extname(file.originalname).toLowerCase());
-    ok ? cb(null, true) : cb(new Error('Only images allowed'));
-  }
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // GET search suggestions (smart search)
@@ -116,7 +124,7 @@ router.get('/api/listings/:id', async (req, res) => {
 router.post('/api/listings', requireLogin, upload.single('image'), async (req, res) => {
   try {
     const { title, description, price, category_id, condition } = req.body;
-    const image_url = req.file ? `/images/uploads/${req.file.filename}` : '/images/default-listing.png';
+    const image_url = req.file ? req.file.path : '/images/default-listing.png';
     if (!title || !description || !price || !category_id || !condition)
       return res.status(400).json({ success: false, message: 'All fields are required' });
 

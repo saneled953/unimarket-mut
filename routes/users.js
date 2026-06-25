@@ -5,22 +5,28 @@ const multer = require('multer');
 const path = require('path');
 const pool = require('../config/db');
 const { requireLogin } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Multer config for profile pictures
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, './public/images/uploads'),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'avatar-' + unique + path.extname(file.originalname));
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary storage for avatars
+const avatarStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'unimarket/avatars',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto' }]
   }
 });
+
 const uploadAvatar = multer({
   storage: avatarStorage,
-  limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
-  fileFilter: (req, file, cb) => {
-    const ok = /jpeg|jpg|png|webp/.test(path.extname(file.originalname).toLowerCase());
-    ok ? cb(null, true) : cb(new Error('Only image files allowed'));
-  }
+  limits: { fileSize: 3 * 1024 * 1024 }
 });
 
 router.get('/api/users/me', requireLogin, async (req, res) => {
@@ -76,7 +82,7 @@ router.put('/api/users/me', requireLogin, uploadAvatar.single('avatar'), async (
     const pmJson = payment_methods ? JSON.stringify(JSON.parse(payment_methods)) : null;
 
     if (req.file) {
-      const profile_picture = `/images/uploads/${req.file.filename}`;
+      const profile_picture = req.file.path;
       await pool.query(
         'UPDATE users SET full_name = ?, bio = ?, residence = ?, whatsapp = ?, payment_methods = ?, profile_picture = ? WHERE id = ?',
         [full_name, bio, residence || null, whatsapp || null, pmJson, profile_picture, req.session.userId]
