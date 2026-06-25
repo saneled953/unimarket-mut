@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniMarket MUT — Buy & Sell on Campus</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 60%, #52b788 100%);
+      color: white;
+      padding: 5rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-content { position: relative; max-width: 680px; margin: 0 auto; }
+    .hero-tag {
+      display: inline-block;
+      background: rgba(244,162,97,0.25);
+      color: var(--accent-light);
+      border: 1px solid rgba(244,162,97,0.4);
+      padding: 0.3rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+    .hero h1 span { color: var(--accent-light); }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.85;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat .number { font-size: 2rem; font-weight: 800; font-family: 'Syne', sans-serif; }
+    .hero-stat .label { font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem; }
+
+    .categories-section { padding: 3rem 0; }
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 1rem;
+    }
+    .category-card {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .category-card:hover {
+      border-color: var(--primary-light);
+      background: #f0f7f4;
+      transform: translateY(-3px);
+    }
+    .category-card .cat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .category-card .cat-name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+
+    .how-it-works { background: white; padding: 4rem 0; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-top: 2rem; }
+    .step { text-align: center; padding: 1.5rem; }
+    .step-number {
+      width: 52px; height: 52px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin: 0 auto 1rem;
+    }
+    .step h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .step p { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; }
+
+    .recent-section { padding: 3rem 0; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div>
+      <span class="logo-text">UniMarket</span>
+      <span class="logo-sub">MUT Campus</span>
+    </div>
+  </a>
+  <button class="hamburger" onclick="document.querySelector('.navbar-nav').classList.toggle('open')">☰</button>
+  <ul class="navbar-nav" id="main-nav">
+    <li><a href="/listings">Browse</a></li>
+    <!-- Guest links -->
+    <span id="guest-links">
+      <li><a href="/login">Login</a></li>
+      <li><a href="/register" class="btn-sell">Register</a></li>
+    </span>
+    <!-- User links (hidden until logged in) -->
+    <span id="user-links" style="display:none">
+      <li><a href="/messages">Messages <span class="badge" id="msg-badge" style="display:none">0</span></a></li>
+      <li><a href="/sell" class="btn-sell">+ Sell</a></li>
+      <li><a href="/dashboard">👤 <span id="nav-username"></span></a></li>
+      <li><a href="#" onclick="logout()">Logout</a></li>
+    </span>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-tag">🎓 MUT Students Only</div>
+    <h1>Buy & Sell <span>Campus Essentials</span> with Ease</h1>
+    <p>The trusted marketplace for Mangosuthu University of Technology students. Find laptops, textbooks, furniture, and more — all from fellow students.</p>
+    <div class="hero-actions">
+      <a href="/listings" class="btn btn-accent btn-lg">Browse Listings</a>
+      <a href="/register" class="btn btn-outline btn-lg" style="border-color:white;color:white">Join Free</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="number" id="stat-listings">—</div>
+        <div class="label">Active Listings</div>
+      </div>
+      <div class="hero-stat">
+        <div class="number" id="stat-students">—</div>
+        <div class="label">Students Registered</div>
+      </div>
+      <div class="hero-stat">
+        <div class="number">8</div>
+        <div class="label">Categories</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Categories -->
+<section class="categories-section">
+  <div class="container">
+    <h2 class="section-title">Browse by Category</h2>
+    <div class="category-grid" id="category-grid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how-it-works">
+  <div class="container">
+    <h2 class="section-title" style="text-align:center">How UniMarket Works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Register with your MUT details</h3>
+        <p>Sign up using your student number and email to join the campus marketplace.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>List what you want to sell</h3>
+        <p>Post your item in minutes — add a photo, set a price, and go live instantly.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Message & meet on campus</h3>
+        <p>Chat with buyers or sellers securely and arrange a safe handover on campus.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <h3>Rate your experience</h3>
+        <p>Leave a review after each transaction to keep the community trustworthy.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Recent Listings -->
+<section class="recent-section">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <h2 class="section-title" style="margin:0">Recent Listings</h2>
+      <a href="/listings" class="btn btn-outline btn-sm">View All →</a>
+    </div>
+    <div class="listings-grid" id="recent-listings">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>© 2025 UniMarket MUT · Made for <a href="#">Mangosuthu University of Technology</a> students · Durban, South Africa</p>
+</footer>
+
+<!-- Chatbot -->
+<button id="chatbot-btn">🤖 Find Items</button>
+<div id="chatbot-panel">
+  <div class="chatbot-header">
+    🤖 UniBot Assistant
+    <button id="chatbot-close" style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem">✕</button>
+  </div>
+  <div class="chatbot-messages" id="chatbot-messages">
+    <div class="chat-bubble bot">Hi! 👋 I'm UniBot. Tell me what you're looking for and I'll find it for you!<br><br>Try: <em>"I need a laptop under R5000"</em></div>
+  </div>
+  <div class="chatbot-input">
+    <input type="text" id="chatbot-input" placeholder="What are you looking for?">
+    <button id="chatbot-send">➤</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/js/utils.js"></script>
+<script>
+  // Load categories
+  fetch('/api/categories').then(r => r.json()).then(data => {
+    const grid = document.getElementById('category-grid');
+    if (!data.categories) return;
+    grid.innerHTML = data.categories.map(c => `
+      <div class="category-card" onclick="window.location='/listings?category=${c.id}'">
+        <div class="cat-icon">${c.icon}</div>
+        <div class="cat-name">${c.name}</div>
+      </div>`).join('');
+  });
+
+  // Load recent listings
+  fetch('/api/listings?sort=newest').then(r => r.json()).then(data => {
+    const grid = document.getElementById('recent-listings');
+    const listings = (data.listings || []).slice(0, 8);
+    if (listings.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📦</div><h3>No listings yet</h3><p>Be the first to post something!</p></div>`;
+      return;
+    }
+    grid.innerHTML = listings.map(renderListingCard).join('');
+    document.getElementById('stat-listings').textContent = data.listings.length + '+';
+  });
+
+  // Load student count
+  fetch('/api/session').then(r => r.json()).then(() => {
+    document.getElementById('stat-students').textContent = '100+';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile — UniMarket MUT</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .profile-hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      padding: 2.5rem 0 4rem;
+      color: white;
+    }
+    .profile-hero-inner {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .profile-avatar-wrap { position: relative; flex-shrink: 0; }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid rgba(255,255,255,0.4);
+    }
+    .profile-name { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.2rem; }
+    .profile-meta { font-size: 0.85rem; opacity: 0.8; display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.4rem; }
+    .profile-meta span { display: flex; align-items: center; gap: 0.3rem; }
+    .profile-body { margin-top: -2rem; }
+    .profile-card {
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .profile-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .stat-box {
+      flex: 1; min-width: 80px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
+    .stat-box .val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+    .stat-box .lbl { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .payment-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .payment-tag {
+      background: #f0f7f4;
+      color: var(--primary);
+      border: 1px solid #c8e6d8;
+      border-radius: 999px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .info-row { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.88rem; color: var(--text); margin-bottom: 0.6rem; }
+    .info-row .lbl { color: var(--text-muted); min-width: 90px; font-size: 0.8rem; }
+    .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .review-item { padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+    .review-item:last-child { border-bottom: none; }
+    .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+    .review-author { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .review-date { font-size: 0.75rem; color: var(--text-muted); }
+    .review-body { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+    .contact-btn {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.7rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      border: none; width: 100%; justify-content: center;
+      margin-bottom: 0.6rem;
+    }
+    .btn-whatsapp { background: #25D366; color: white; }
+    .btn-whatsapp:hover { background: #1da851; }
+    .empty-small { text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <!-- Hero -->
+  <div class="profile-hero">
+    <div class="container">
+      <div class="profile-hero-inner">
+        <div class="profile-avatar-wrap">
+          <img id="u-avatar" src="/images/default-avatar.png" alt="Profile" class="profile-avatar" onerror="this.src='/images/default-avatar.png'">
+        </div>
+        <div>
+          <div class="profile-name" id="u-name">Loading...</div>
+          <div id="u-stars" style="font-size:1rem;margin:0.2rem 0"></div>
+          <div class="profile-meta">
+            <span id="u-residence" style="display:none">🏠 <span id="u-residence-val"></span></span>
+            <span id="u-member">📅 <span id="u-member-val">Member since...</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container profile-body">
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:1.25rem;align-items:start" id="layout">
+
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- Stats -->
+        <div class="profile-card">
+          <h3>📊 Stats</h3>
+          <div class="stat-row">
+            <div class="stat-box"><div class="val" id="u-rating">—</div><div class="lbl">Rating</div></div>
+            <div class="stat-box"><div class="val" id="u-reviews">0</div><div class="lbl">Reviews</div></div>
+            <div class="stat-box"><div class="val" id="u-listings-count">0</div><div class="lbl">Listings</div></div>
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div class="profile-card" id="bio-card" style="display:none">
+          <h3>👤 About</h3>
+          <p id="u-bio" style="font-size:0.88rem;color:var(--text-muted);line-height:1.6"></p>
+        </div>
+
+        <!-- Active Listings -->
+        <div class="profile-card">
+          <h3>🛍️ Active Listings</h3>
+          <div class="listings-grid" id="u-listings-grid">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Reviews -->
+        <div class="profile-card">
+          <h3>⭐ Reviews</h3>
+          <div id="u-reviews-list">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+        <!-- Contact -->
+        <div class="profile-card" id="contact-card">
+          <h3>📬 Contact Seller</h3>
+          <button class="contact-btn btn-whatsapp" id="wa-btn" style="display:none" onclick="openWhatsApp()">
+            💬 WhatsApp
+          </button>
+          <a href="#" id="msg-btn" class="contact-btn btn-primary" style="text-decoration:none;display:none">
+            ✉️ Send Message
+          </a>
+          <p id="contact-login-msg" style="font-size:0.8rem;color:var(--text-muted);text-align:center;display:none">
+            <a href="/login" style="color:var(--primary)">Log in</a> to contact this seller
+          </p>
+          <p id="own-profile-msg" style="font-size:0.8rem;color:var(--text-muted);text-align:center;display:none">
+            This is your profile. <a href="/dashboard" style="color:var(--primary)">Go to dashboard →</a>
+          </p>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="profile-card" id="payment-card" style="display:none">
+          <h3>💳 Payment Methods</h3>
+          <div class="payment-tags" id="u-payment-tags"></div>
+        </div>
+
+        <!-- Details -->
+        <div class="profile-card">
+          <h3>ℹ️ Details</h3>
+          <div class="info-row"><span class="lbl">Student No</span> <span id="u-student-no">—</span></div>
+          <div class="info-row" id="u-res-row" style="display:none"><span class="lbl">Residence</span> <span id="u-res-val">—</span></div>
+          <div class="info-row"><span class="lbl">Member since</span> <span id="u-joined">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Responsive: stack on small screens -->
+  <style>
+    @media (max-width: 700px) {
+      #layout { grid-template-columns: 1fr !important; }
+    }
+  </style>
+
+  <script src="/js/utils.js"></script>
+  <script>
+    const userId = window.location.pathname.split('/').pop();
+    let profileWhatsApp = null;
+
+    async function loadProfile() {
+      try {
+        const [userRes, listingsRes, reviewsRes, sessionRes] = await Promise.all([
+          fetch(`/api/users/${userId}`),
+          fetch(`/api/users/${userId}/listings`),
+          fetch(`/api/reviews/${userId}`),
+          fetch('/api/session')
+        ]);
+
+        const { user } = await userRes.json();
+        const { listings } = await listingsRes.json();
+        const reviewData = await reviewsRes.json();
+        const sessionData = await sessionRes.json();
+        const currentUserId = sessionData.loggedIn ? sessionData.userId : null;
+
+        if (!user) { document.getElementById('u-name').textContent = 'User not found'; return; }
+
+        // Hero
+        document.title = `${user.full_name} — UniMarket MUT`;
+        document.getElementById('u-avatar').src = user.profile_picture || '/images/default-avatar.png';
+        document.getElementById('u-name').textContent = user.full_name;
+        document.getElementById('u-stars').innerHTML = renderStars(user.rating) + ` <span style="font-size:0.8rem;opacity:0.8">(${user.total_reviews} reviews)</span>`;
+        document.getElementById('u-member-val').textContent = new Date(user.created_at).toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' });
+
+        if (user.residence) {
+          document.getElementById('u-residence').style.display = 'flex';
+          document.getElementById('u-residence-val').textContent = user.residence;
+          document.getElementById('u-res-row').style.display = 'flex';
+          document.getElementById('u-res-val').textContent = user.residence;
+        }
+
+        // Stats
+        const activeListings = (listings || []).filter(l => l.status === 'active');
+        document.getElementById('u-rating').textContent = user.rating ? parseFloat(user.rating).toFixed(1) : '—';
+        document.getElementById('u-reviews').textContent = user.total_reviews || 0;
+        document.getElementById('u-listings-count').textContent = activeListings.length;
+        document.getElementById('u-student-no').textContent = user.student_number;
+        document.getElementById('u-joined').textContent = new Date(user.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        // Bio
+        if (user.bio && user.bio.trim()) {
+          document.getElementById('bio-card').style.display = 'block';
+          document.getElementById('u-bio').textContent = user.bio;
+        }
+
+        // Payment methods
+        const pm = Array.isArray(user.payment_methods) ? user.payment_methods : [];
+        if (pm.length > 0) {
+          document.getElementById('payment-card').style.display = 'block';
+          const icons = { 'Cash': '💵', 'SnapScan': '📱', 'EFT': '🏦', 'EFT / Bank Transfer': '🏦', 'Ozow': '⚡', 'Capitec Pay': '🟢' };
+          document.getElementById('u-payment-tags').innerHTML = pm.map(p =>
+            `<span class="payment-tag">${icons[p] || '💳'} ${p}</span>`
+          ).join('');
+        }
+
+        // Contact buttons
+        if (currentUserId && currentUserId == userId) {
+          // Own profile
+          document.getElementById('own-profile-msg').style.display = 'block';
+        } else if (!currentUserId) {
+          document.getElementById('contact-login-msg').style.display = 'block';
+        } else {
+          // Another user — show contact options
+          if (user.whatsapp) {
+            profileWhatsApp = user.whatsapp;
+            document.getElementById('wa-btn').style.display = 'flex';
+          }
+          const msgBtn = document.getElementById('msg-btn');
+          msgBtn.style.display = 'flex';
+          msgBtn.href = `/messages?with=${userId}`;
+        }
+
+        // Active listings grid
+        const grid = document.getElementById('u-listings-grid');
+        if (activeListings.length === 0) {
+          grid.innerHTML = '<p class="empty-small" style="grid-column:1/-1">No active listings</p>';
+        } else {
+          grid.innerHTML = activeListings.map(l => renderListingCard(l)).join('');
+        }
+
+        // Reviews
+        const reviewsList = document.getElementById('u-reviews-list');
+        const reviews = reviewData.reviews || [];
+        if (reviews.length === 0) {
+          reviewsList.innerHTML = '<p class="empty-small">No reviews yet</p>';
+        } else {
+          reviewsList.innerHTML = reviews.map(r => `
+            <div class="review-item">
+              <div class="review-header">
+                <span class="review-author">${r.reviewer_name}</span>
+                <span class="review-date">${new Date(r.created_at).toLocaleDateString('en-ZA')}</span>
+              </div>
+              <div style="margin:0.25rem 0">${renderStars(r.rating)}</div>
+              ${r.comment ? `<p class="review-body">${r.comment}</p>` : ''}
+            </div>`).join('');
+        }
+
+      } catch (err) {
+        console.error('Profile load error:', err);
+        document.getElementById('u-name').textContent = 'Failed to load profile';
+      }
+    }
+
+    function openWhatsApp() {
+      if (!profileWhatsApp) return;
+      const number = profileWhatsApp.replace(/\D/g, '').replace(/^0/, '27');
+      window.open(`https://wa.me/${number}`, '_blank');
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

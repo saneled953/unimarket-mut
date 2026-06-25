@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Listings — UniMarket MUT</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .listings-layout { display: grid; grid-template-columns: 260px 1fr; gap: 2rem; padding: 2rem 0; }
+    .filters-panel {
+      background: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      height: fit-content;
+      position: sticky;
+      top: 80px;
+    }
+    .filters-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 1.25rem; }
+    .filter-section { margin-bottom: 1.5rem; }
+    .filter-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.6rem; display: block; }
+    .price-row { display: flex; gap: 0.5rem; }
+    .price-row input { width: 50%; }
+    .condition-options { display: flex; flex-direction: column; gap: 0.4rem; }
+    .condition-options label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer; }
+    .search-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .search-bar input { flex: 1; }
+    .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .results-count { font-size: 0.9rem; color: var(--text-muted); }
+    @media (max-width: 768px) {
+      .listings-layout { grid-template-columns: 1fr; }
+      .filters-panel { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div><span class="logo-text">UniMarket</span><span class="logo-sub">MUT Campus</span></div>
+  </a>
+  <button class="hamburger" onclick="document.querySelector('.navbar-nav').classList.toggle('open')">☰</button>
+  <ul class="navbar-nav">
+    <li><a href="/listings" class="active">Browse</a></li>
+    <span id="guest-links">
+      <li><a href="/login">Login</a></li>
+      <li><a href="/register" class="btn-sell">Register</a></li>
+    </span>
+    <span id="user-links" style="display:none">
+      <li><a href="/messages">Messages <span class="badge" id="msg-badge" style="display:none">0</span></a></li>
+      <li><a href="/sell" class="btn-sell">+ Sell</a></li>
+      <li><a href="/dashboard">👤 <span id="nav-username"></span></a></li>
+      <li><a href="#" onclick="logout()">Logout</a></li>
+    </span>
+  </ul>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Browse Listings</h1>
+    <p class="page-subtitle">Find what you need from fellow MUT students</p>
+  </div>
+
+  <!-- Search bar -->
+  <div class="search-bar">
+    <div style="position:relative;margin-bottom:1rem">
+      <input type="text" id="search-input" class="form-control" placeholder="🔍  Search laptops, textbooks, clothing..." autocomplete="off">
+      <div id="search-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);box-shadow:0 6px 20px rgba(0,0,0,0.1);z-index:200;max-height:320px;overflow-y:auto"></div>
+    </div>
+    <button class="btn btn-primary" onclick="applyFilters()">Search</button>
+  </div>
+
+  <div class="listings-layout">
+    <!-- Filters -->
+    <aside class="filters-panel">
+      <div class="filters-title">🔧 Filters</div>
+
+      <div class="filter-section">
+        <span class="filter-label">Category</span>
+        <select id="filter-category" class="form-control" onchange="applyFilters(1)">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Price Range (ZAR)</span>
+        <div class="price-row">
+          <input type="number" id="filter-min" class="form-control" placeholder="Min">
+          <input type="number" id="filter-max" class="form-control" placeholder="Max">
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Condition</span>
+        <div class="condition-options">
+          <label><input type="radio" name="condition" value="" checked onchange="applyFilters(1)"> All</label>
+          <label><input type="radio" name="condition" value="New" onchange="applyFilters(1)"> New</label>
+          <label><input type="radio" name="condition" value="Like New" onchange="applyFilters(1)"> Like New</label>
+          <label><input type="radio" name="condition" value="Good" onchange="applyFilters(1)"> Good</label>
+          <label><input type="radio" name="condition" value="Fair" onchange="applyFilters(1)"> Fair</label>
+          <label><input type="radio" name="condition" value="Poor" onchange="applyFilters(1)"> Poor</label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Sort By</span>
+        <select id="filter-sort" class="form-control" onchange="applyFilters(1)">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+        </select>
+      </div>
+
+      <button class="btn btn-outline btn-full btn-sm" onclick="clearFilters()">Clear Filters</button>
+    </aside>
+
+    <!-- Results -->
+    <div>
+      <div class="results-header">
+        <span class="results-count" id="results-count">Loading...</span>
+      </div>
+      <div class="listings-grid" id="listings-grid">
+        <div class="spinner"></div>
+      </div>
+      <!-- Pagination -->
+      <div id="pagination" style="display:flex;justify-content:center;align-items:center;gap:0.5rem;margin-top:2rem;flex-wrap:wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>© 2025 UniMarket MUT · Durban, South Africa</p>
+</footer>
+
+<!-- Chatbot -->
+<button id="chatbot-btn">🤖 Find Items</button>
+<div id="chatbot-panel">
+  <div class="chatbot-header">
+    🤖 UniBot Assistant
+    <button id="chatbot-close" style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem">✕</button>
+  </div>
+  <div class="chatbot-messages" id="chatbot-messages">
+    <div class="chat-bubble bot">Hi! 👋 Tell me what you need and I'll find it for you!<br><br>Try: <em>"cheap textbooks"</em> or <em>"laptop under R8000"</em></div>
+  </div>
+  <div class="chatbot-input">
+    <input type="text" id="chatbot-input" placeholder="What are you looking for?">
+    <button id="chatbot-send">➤</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/utils.js"></script>
+<script>
+  let currentPage = 1;
+
+  // Load categories into filter
+  fetch('/api/categories').then(r => r.json()).then(data => {
+    const sel = document.getElementById('filter-category');
+    (data.categories || []).forEach(c => {
+      sel.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
+    });
+    // Apply URL param category if present
+    const urlCat = new URLSearchParams(window.location.search).get('category');
+    if (urlCat) { sel.value = urlCat; }
+    applyFilters();
+  });
+
+  async function applyFilters(page = 1) {
+    currentPage = page;
+    const search = document.getElementById('search-input').value.trim();
+    const category = document.getElementById('filter-category').value;
+    const min_price = document.getElementById('filter-min').value;
+    const max_price = document.getElementById('filter-max').value;
+    const condition = document.querySelector('input[name="condition"]:checked')?.value || '';
+    const sort = document.getElementById('filter-sort').value;
+
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (category) params.set('category', category);
+    if (min_price) params.set('min_price', min_price);
+    if (max_price) params.set('max_price', max_price);
+    if (condition) params.set('condition', condition);
+    if (sort) params.set('sort', sort);
+    params.set('page', page);
+
+    const grid = document.getElementById('listings-grid');
+    const countEl = document.getElementById('results-count');
+    const paginationEl = document.getElementById('pagination');
+    grid.innerHTML = '<div class="spinner"></div>';
+    paginationEl.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/listings?' + params.toString());
+      const data = await res.json();
+      const listings = data.listings || [];
+      const pg = data.pagination || {};
+
+      countEl.textContent = `${pg.total || listings.length} listing${(pg.total || listings.length) !== 1 ? 's' : ''} found`;
+
+      if (listings.length === 0) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-icon">🔍</div>
+          <h3>No listings found</h3>
+          <p>Try adjusting your filters or search terms</p>
+        </div>`;
+        return;
+      }
+      grid.innerHTML = listings.map(renderListingCard).join('');
+
+      // Render pagination controls
+      if (pg.totalPages > 1) {
+        const btnStyle = 'padding:0.45rem 0.9rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:white;cursor:pointer;font-size:0.875rem;font-family:inherit;';
+        const activeBtnStyle = btnStyle + 'background:var(--primary);color:white;border-color:var(--primary);font-weight:700;';
+
+        let html = '';
+        if (pg.page > 1) html += `<button style="${btnStyle}" onclick="applyFilters(${pg.page - 1})">← Prev</button>`;
+
+        for (let i = 1; i <= pg.totalPages; i++) {
+          if (pg.totalPages <= 7 || i === 1 || i === pg.totalPages || Math.abs(i - pg.page) <= 1) {
+            html += `<button style="${i === pg.page ? activeBtnStyle : btnStyle}" onclick="applyFilters(${i})">${i}</button>`;
+          } else if (Math.abs(i - pg.page) === 2) {
+            html += `<span style="padding:0.45rem 0.3rem;color:var(--text-muted)">…</span>`;
+          }
+        }
+
+        if (pg.page < pg.totalPages) html += `<button style="${btnStyle}" onclick="applyFilters(${pg.page + 1})">Next →</button>`;
+        paginationEl.innerHTML = html;
+        paginationEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } catch {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>Failed to load listings</h3></div>`;
+    }
+  }
+
+  function clearFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-category').value = '';
+    document.getElementById('filter-min').value = '';
+    document.getElementById('filter-max').value = '';
+    document.querySelector('input[name="condition"][value=""]').checked = true;
+    document.getElementById('filter-sort').value = 'newest';
+    applyFilters(1);
+  }
+
+  // ── Smart Search Suggestions ─────────────────────────────────────
+  let suggestTimeout = null;
+  const searchInput = document.getElementById('search-input');
+  const suggestBox = document.getElementById('search-suggestions');
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(suggestTimeout);
+    const q = searchInput.value.trim();
+    if (q.length < 2) { suggestBox.style.display = 'none'; return; }
+    suggestTimeout = setTimeout(() => fetchSuggestions(q), 250);
+  });
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { suggestBox.style.display = 'none'; applyFilters(1); }
+    if (e.key === 'Escape') suggestBox.style.display = 'none';
+  });
+
+  // Close suggestions when clicking outside
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !suggestBox.contains(e.target)) {
+      suggestBox.style.display = 'none';
+    }
+  });
+
+  async function fetchSuggestions(q) {
+    try {
+      const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const suggestions = data.suggestions || [];
+
+      if (suggestions.length === 0) { suggestBox.style.display = 'none'; return; }
+
+      suggestBox.innerHTML = suggestions.map(s => `
+        <div onclick="selectSuggestion('${s.title.replace(/'/g, "\\'")}')"
+          style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;cursor:pointer;border-bottom:1px solid var(--border)"
+          onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+          <img src="${s.image_url || '/images/default-listing.png'}" alt=""
+            onerror="this.src='/images/default-listing.png'"
+            style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${highlightMatch(s.title, q)}</div>
+            <div style="font-size:0.75rem;color:var(--primary);font-weight:700">R ${parseFloat(s.price).toFixed(2)}</div>
+          </div>
+          <span style="font-size:1.1rem">${s.category_icon || ''}</span>
+        </div>`).join('') +
+        `<div onclick="applyFilters(1)" style="padding:0.6rem 1rem;text-align:center;font-size:0.8rem;color:var(--primary);cursor:pointer;font-weight:600;background:#f9f9f9"
+          onmouseover="this.style.background='#f0f7f4'" onmouseout="this.style.background='#f9f9f9'">
+          🔍 See all results for "<strong>${q}</strong>"
+        </div>`;
+
+      suggestBox.style.display = 'block';
+    } catch { suggestBox.style.display = 'none'; }
+  }
+
+  function selectSuggestion(title) {
+    searchInput.value = title;
+    suggestBox.style.display = 'none';
+    applyFilters(1);
+  }
+
+  function highlightMatch(text, query) {
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return text;
+    return text.substring(0, idx) +
+      '<strong style="color:var(--primary)">' + text.substring(idx, idx + query.length) + '</strong>' +
+      text.substring(idx + query.length);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — UniMarket MUT</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .auth-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      background: linear-gradient(135deg, #f5f2eb 0%, #e8f5ee 100%);
+    }
+    .auth-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(26,58,42,0.12);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      border: 1px solid var(--border);
+    }
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .auth-logo .brand { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+    .auth-logo .sub { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .auth-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .auth-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.75rem; }
+    .divider { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin: 1.25rem 0; }
+    .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-muted); }
+    .auth-footer a { color: var(--primary-light); font-weight: 600; }
+    #error-msg { display: none; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div>
+      <span class="logo-text">UniMarket</span>
+      <span class="logo-sub">MUT Campus</span>
+    </div>
+  </a>
+</nav>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="brand">UniMarket</div>
+      <div class="sub">Mangosuthu University of Technology</div>
+    </div>
+
+    <h2 class="auth-title">Welcome back</h2>
+    <p class="auth-subtitle">Sign in to your student account</p>
+
+    <div class="alert alert-error" id="error-msg"></div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input type="email" id="email" class="form-control" placeholder="student@mut.ac.za" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" id="password" class="form-control" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary btn-full btn-lg" id="login-btn" onclick="handleLogin()">
+      Sign In
+    </button>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="/register">Register here</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/utils.js"></script>
+<script>
+  // Show message from redirect
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('msg')) showToast(params.get('msg'), 'info');
+
+  async function handleLogin() {
+    const btn = document.getElementById('login-btn');
+    const errorEl = document.getElementById('error-msg');
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    errorEl.style.display = 'none';
+
+    if (!email || !password) {
+      errorEl.textContent = 'Please fill in all fields.';
+      errorEl.style.display = 'flex';
+      return;
+    }
+
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('Login successful! Redirecting...', 'success');
+        setTimeout(() => window.location.href = data.redirect || '/dashboard', 800);
+      } else {
+        errorEl.textContent = data.message || 'Login failed. Please try again.';
+        errorEl.style.display = 'flex';
+        btn.textContent = 'Sign In';
+        btn.disabled = false;
+      }
+    } catch {
+      errorEl.textContent = 'Network error. Please try again.';
+      errorEl.style.display = 'flex';
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+    }
+  }
+
+  // Allow Enter key
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

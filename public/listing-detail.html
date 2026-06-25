@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listing — UniMarket MUT</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .detail-layout { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; padding: 2rem 0 4rem; }
+    .listing-image { width: 100%; border-radius: var(--radius); object-fit: cover; max-height: 420px; background: #eee; }
+    .listing-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .listing-price { font-size: 2rem; font-weight: 800; color: var(--primary); font-family: 'Syne', sans-serif; margin-bottom: 1rem; }
+    .listing-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .meta-tag {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .listing-desc { color: var(--text-muted); line-height: 1.7; font-size: 0.95rem; margin-bottom: 2rem; white-space: pre-wrap; }
+    .sidebar-card { background: white; border-radius: var(--radius); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.25rem; }
+    .seller-info { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .seller-avatar {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--border);
+    }
+    .seller-name { font-weight: 700; font-size: 1rem; }
+    .seller-rating { font-size: 0.85rem; color: var(--text-muted); }
+    .message-area { width: 100%; resize: vertical; min-height: 90px; }
+    #review-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #review-modal.open { display: flex; }
+    .modal-card { background: white; border-radius: var(--radius); padding: 2rem; max-width: 420px; width: 90%; }
+    .star-picker { display: flex; gap: 0.5rem; font-size: 2rem; cursor: pointer; margin: 1rem 0; }
+    .star-picker span { color: #d1d5db; transition: color 0.15s; }
+    .star-picker span.selected { color: #f59e0b; }
+    @media (max-width: 768px) { .detail-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div><span class="logo-text">UniMarket</span><span class="logo-sub">MUT Campus</span></div>
+  </a>
+  <button class="hamburger" onclick="document.querySelector('.navbar-nav').classList.toggle('open')">☰</button>
+  <ul class="navbar-nav">
+    <li><a href="/listings">Browse</a></li>
+    <span id="guest-links">
+      <li><a href="/login">Login</a></li>
+      <li><a href="/register" class="btn-sell">Register</a></li>
+    </span>
+    <span id="user-links" style="display:none">
+      <li><a href="/messages">Messages <span class="badge" id="msg-badge" style="display:none">0</span></a></li>
+      <li><a href="/sell" class="btn-sell">+ Sell</a></li>
+      <li><a href="/dashboard">👤 <span id="nav-username"></span></a></li>
+      <li><a href="#" onclick="logout()">Logout</a></li>
+    </span>
+  </ul>
+</nav>
+
+<div class="container">
+  <div id="listing-content">
+    <div class="spinner" style="margin-top:3rem"></div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div id="review-modal">
+  <div class="modal-card">
+    <h3 style="font-family:'Syne',sans-serif;font-size:1.2rem">Leave a Review</h3>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin-top:0.25rem">Rate your experience with this seller</p>
+    <div class="star-picker" id="star-picker">
+      <span data-val="1">★</span>
+      <span data-val="2">★</span>
+      <span data-val="3">★</span>
+      <span data-val="4">★</span>
+      <span data-val="5">★</span>
+    </div>
+    <div class="form-group">
+      <textarea id="review-comment" class="form-control" placeholder="Write your review (optional)..." rows="3"></textarea>
+    </div>
+    <div style="display:flex;gap:0.75rem">
+      <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+      <button class="btn btn-outline" onclick="document.getElementById('review-modal').classList.remove('open')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><p>© 2025 UniMarket MUT · Durban, South Africa</p></footer>
+
+<button id="chatbot-btn">🤖 Find Items</button>
+<div id="chatbot-panel">
+  <div class="chatbot-header">🤖 UniBot<button id="chatbot-close" style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem">✕</button></div>
+  <div class="chatbot-messages" id="chatbot-messages"><div class="chat-bubble bot">What are you looking for?</div></div>
+  <div class="chatbot-input"><input type="text" id="chatbot-input" placeholder="Ask me..."><button id="chatbot-send">➤</button></div>
+</div>
+<div id="toast"></div>
+
+<script src="/js/utils.js"></script>
+<script>
+  const listingId = window.location.pathname.split('/').pop();
+  let listing = null;
+  let currentUserId = null;
+  let selectedRating = 0;
+
+  async function loadListing() {
+    try {
+      const [sessRes, listRes] = await Promise.all([
+        fetch('/api/session'),
+        fetch(`/api/listings/${listingId}`)
+      ]);
+      const sessData = await sessRes.json();
+      const listData = await listRes.json();
+      currentUserId = sessData.userId || null;
+
+      if (!listData.success) {
+        document.getElementById('listing-content').innerHTML = `<div class="empty-state"><div class="empty-icon">😕</div><h3>Listing not found</h3><a href="/listings" class="btn btn-primary" style="margin-top:1rem">Back to Listings</a></div>`;
+        return;
+      }
+      listing = listData.listing;
+      renderListing();
+    } catch {
+      document.getElementById('listing-content').innerHTML = '<p style="padding:2rem">Failed to load listing.</p>';
+    }
+  }
+
+  function renderListing() {
+    const isSeller = currentUserId === listing.seller_id;
+    document.title = `${listing.title} — UniMarket MUT`;
+
+    document.getElementById('listing-content').innerHTML = `
+      <div style="padding:1rem 0 0.5rem"><a href="/listings" style="color:var(--text-muted);font-size:0.875rem">← Back to Listings</a></div>
+      <div class="detail-layout">
+        <div>
+          <img class="listing-image" src="${listing.image_url}" alt="${listing.title}" onerror="this.src='/images/default-listing.png'">
+          <div style="margin-top:2rem">
+            <h1 class="listing-title">${listing.title}</h1>
+            <div class="listing-price">${formatPrice(listing.price)}</div>
+            <div class="listing-meta">
+              <span class="meta-tag condition-badge condition-${listing.condition}">${listing.condition}</span>
+              <span class="meta-tag">${listing.category_icon} ${listing.category_name}</span>
+              <span class="meta-tag">👁 ${listing.views} views</span>
+              <span class="meta-tag">📅 ${formatDate(listing.created_at)}</span>
+              <span class="meta-tag status-${listing.status}">${listing.status === 'active' ? '🟢 Available' : listing.status === 'sold' ? '🔴 Sold' : '⚪ Removed'}</span>
+            </div>
+            <p class="listing-desc">${listing.description}</p>
+          </div>
+        </div>
+
+        <aside>
+          <!-- Seller card -->
+          <div class="sidebar-card">
+            <div class="seller-info">
+              <a href="/profile/${listing.seller_id}" style="display:contents">
+                <img class="seller-avatar" src="${listing.seller_picture || '/images/default-avatar.png'}" alt="${listing.seller_name}" onerror="this.src='/images/default-avatar.png'" style="cursor:pointer">
+              </a>
+              <div>
+                <div class="seller-name">
+                  <a href="/profile/${listing.seller_id}" style="color:var(--text);text-decoration:none" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text)'">${listing.seller_name}</a>
+                </div>
+                <div class="seller-rating">${renderStars(listing.seller_rating)} (${listing.seller_reviews} reviews)</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)">${listing.student_number}</div>
+              </div>
+            </div>
+            ${isSeller ? `
+              <div style="display:flex;flex-direction:column;gap:0.75rem">
+                <a href="/sell?edit=${listing.id}" class="btn btn-outline btn-full">✏️ Edit Listing</a>
+                <button class="btn btn-danger btn-full" onclick="markSold()">✅ Mark as Sold</button>
+                <button class="btn btn-outline btn-full" onclick="deleteListing()" style="border-color:var(--danger);color:var(--danger)">🗑 Delete Listing</button>
+              </div>
+            ` : listing.status === 'active' ? `
+              ${currentUserId ? `
+                <div class="form-group">
+                  <label class="form-label">Send a Message</label>
+                  <textarea id="msg-text" class="form-control message-area" placeholder="Hi, I'm interested in your ${listing.title}. Is it still available?"></textarea>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="sendMessage()">💬 Contact Seller</button>
+                <button class="btn btn-outline btn-full" style="margin-top:0.6rem" onclick="openReviewModal()">⭐ Leave a Review</button>
+              ` : `
+                <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">Login to contact the seller</p>
+                <a href="/login" class="btn btn-primary btn-full">Login to Contact</a>
+              `}
+            ` : `<div class="alert alert-info">This item is no longer available.</div>`}
+          </div>
+
+          <!-- Reviews -->
+          <div class="sidebar-card">
+            <h3 style="font-family:'Syne',sans-serif;font-size:1rem;margin-bottom:1rem">Seller Reviews</h3>
+            <div id="reviews-list"><div class="spinner" style="margin:1rem auto"></div></div>
+          </div>
+        </aside>
+      </div>`;
+
+    loadReviews();
+  }
+
+  async function loadReviews() {
+    if (!listing) return;
+    const res = await fetch(`/api/reviews/${listing.seller_id}`);
+    const data = await res.json();
+    const el = document.getElementById('reviews-list');
+    if (!data.reviews || data.reviews.length === 0) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem">No reviews yet.</p>';
+      return;
+    }
+    el.innerHTML = data.reviews.slice(0, 3).map(r => `
+      <div style="border-bottom:1px solid var(--border);padding-bottom:0.75rem;margin-bottom:0.75rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong style="font-size:0.875rem">${r.reviewer_name}</strong>
+          <span>${renderStars(r.rating)}</span>
+        </div>
+        ${r.comment ? `<p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.25rem">${r.comment}</p>` : ''}
+        <span style="font-size:0.75rem;color:var(--text-muted)">${formatDate(r.created_at)}</span>
+      </div>`).join('');
+  }
+
+  async function sendMessage() {
+    const content = document.getElementById('msg-text')?.value.trim();
+    if (!content) { showToast('Please write a message first', 'error'); return; }
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiver_id: listing.seller_id, content, listing_id: listing.id })
+      });
+      const data = await res.json();
+      if (data.success) { showToast('Message sent!', 'success'); document.getElementById('msg-text').value = ''; }
+      else if (res.status === 401) window.location.href = '/login';
+      else showToast(data.message || 'Failed to send message', 'error');
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  function openReviewModal() {
+    document.getElementById('review-modal').classList.add('open');
+  }
+
+  // Star picker
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#star-picker span').forEach(star => {
+      star.addEventListener('click', () => {
+        selectedRating = parseInt(star.dataset.val);
+        document.querySelectorAll('#star-picker span').forEach((s, i) => {
+          s.classList.toggle('selected', i < selectedRating);
+        });
+      });
+    });
+  });
+
+  async function submitReview() {
+    if (selectedRating === 0) { showToast('Please select a rating', 'error'); return; }
+    const comment = document.getElementById('review-comment').value;
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewed_user_id: listing.seller_id, listing_id: listing.id, rating: selectedRating, comment })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Review submitted!', 'success');
+        document.getElementById('review-modal').classList.remove('open');
+        loadReviews();
+      } else showToast(data.message || 'Failed to submit', 'error');
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  async function markSold() {
+    if (!confirm('Mark this listing as sold?')) return;
+    const res = await fetch(`/api/listings/${listingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...listing, status: 'sold' })
+    });
+    const data = await res.json();
+    if (data.success) { showToast('Marked as sold!', 'success'); setTimeout(() => location.reload(), 800); }
+  }
+
+  async function deleteListing() {
+    if (!confirm('Are you sure you want to delete this listing? This cannot be undone.')) return;
+    const res = await fetch(`/api/listings/${listingId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) { showToast('Listing deleted', 'success'); setTimeout(() => window.location.href = '/dashboard', 800); }
+  }
+
+  loadListing();
+</script>
+</body>
+</html>
